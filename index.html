@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Organizational Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 25px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .chart-container {
+            min-height: 600px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            background: #f9f9f9;
+            transition: all 0.3s ease;
+        }
+        
+        .chart-container:hover {
+            border-color: #764ba2;
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .controls h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .controls h2:before {
+            content: "⚙️";
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95em;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #2c3e50;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #34495e;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+        
+        .btn-outline:hover {
+            background: #f0f4ff;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .modal-header h2 {
+            color: #2c3e50;
+            font-size: 1.8em;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2em;
+            cursor: pointer;
+            color: #7f8c8d;
+            transition: color 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            color: #e74c3c;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .job-details-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #2ecc71;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .job-title {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+        
+        .job-level {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section h4:before {
+            font-size: 1.2em;
+        }
+        
+        .section ul {
+            padding-left: 25px;
+        }
+        
+        .section li {
+            margin-bottom: 8px;
+            color: #34495e;
+            line-height: 1.5;
+        }
+        
+        .help-text {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        /* Color coding for levels */
+        .level-1 { background: #2c3e50; }
+        .level-2 { background: #3498db; }
+        .level-3 { background: #2ecc71; }
+        .level-4 { background: #f39c12; }
+        .level-5 { background: #e74c3c; }
+        
+        .department-main { background: #9b59b6; }
+        .department-sub { background: #1abc9c; }
+        
+        /* Chart styling */
+        :root {
+            --main-dept: #9b59b6;
+            --sub-dept: #1abc9c;
+            --level-1: #2c3e50;
+            --level-2: #3498db;
+            --level-3: #2ecc71;
+            --level-4: #f39c12;
+            --level-5: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Interactive Organizational Chart</h1>
+            <p>Click on any position to view details. Use the controls below to add departments, sub-departments, and positions.</p>
+        </div>
+        
+        <div class="controls">
+            <h2>Chart Controls</h2>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="openModal('mainDept')">
+                    <span>🏢</span> Add Main Department
+                </button>
+                <button class="btn btn-secondary" onclick="openModal('subDept')">
+                    <span>🏛️</span> Add Sub-Department
+                </button>
+                <button class="btn btn-primary" onclick="openModal('position')">
+                    <span>👔</span> Add Position
+                </button>
+                <button class="btn btn-outline" onclick="resetChart()">
+                    <span>🔄</span> Reset Chart
+                </button>
+            </div>
+        </div>
+        
+        <div class="chart-container" id="chartDiv"></div>
+        
+        <div class="job-details-panel" id="jobDetailsPanel">
+            <div class="job-header">
+                <div>
+                    <h2 class="job-title" id="detailJobTitle"></h2>
+                    <div>
+                        <span class="job-level" id="detailJobLevel"></span>
+                        <span style="margin-left: 10px; color: #7f8c8d;" id="detailDepartment"></span>
+                    </div>
+                </div>
+                <button class="close-btn" onclick="closeJobDetails()">×</button>
+            </div>
+            <div class="section">
+                <h4>📋 Overview</h4>
+                <p id="detailOverview"></p>
+            </div>
+            <div class="section">
+                <h4>🎯 Responsibilities</h4>
+                <ul id="detailResponsibilities"></ul>
+            </div>
+            <div class="section">
+                <h4>📚 Qualifications</h4>
+                <ul id="detailQualifications"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div class="modal" id="mainDeptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🏢 Add Main Department</h2>
+                <button class="close-btn" onclick="closeModal('mainDept')">×</button>
+            </div>
+            <div class="form-group">
+                <label for="deptName">Department Name</label>
+                <input type="text" id="deptName" class="form-control" placeholder="e.g., Maintenance, Operations, Sales">
+            </div>
+            <div class="form-group">
+                <label for="deptDescription">Description (Optional)</label>
+                <textarea id="deptDescription" class="form-control" rows="3" placeholder="Brief description of this department's function..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addMainDepartment()">Add Department</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="subDeptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🏛️ Add Sub-Department</h2>
+                <button class="close-btn" onclick="closeModal('subDept')">×</button>
+            </div>
+            <div class="form-group">
+                <label for="parentDept">Parent Department</label>
+                <select id="parentDept" class="form-control">
+                    <option value="">Select a main department...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="subDeptName">Sub-Department Name</label>
+                <input type="text" id="subDeptName" class="form-control" placeholder="e.g., Fertilizing, Mowing, Sprinklers">
+            </div>
+            <div class="form-group">
+                <label for="subDeptDescription">Description (Optional)</label>
+                <textarea id="subDeptDescription" class="form-control" rows="3" placeholder="Brief description of this sub-department..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addSubDepartment()">Add Sub-Department</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="positionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👔 Add Position</h2>
+                <button class="close-btn" onclick="closeModal('position')">×</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="positionDept">Department/Sub-Department</label>
+                    <select id="positionDept" class="form-control">
+                        <option value="">Select department...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="positionLevel">Level</label>
+                    <select id="positionLevel" class="form-control">
+                        <option value="1">Level 1 (Executive)</option>
+                        <option value="2">Level 2 (Management)</option>
+                        <option value="3">Level 3 (Supervisor)</option>
+                        <option value="4">Level 4 (Lead)</option>
+                        <option value="5">Level 5 (Staff)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="positionTitle">Position Title</label>
+                <input type="text" id="positionTitle" class="form-control" placeholder="e.g., Manager, Team Lead, Specialist">
+            </div>
+            <div class="form-group">
+                <label for="personName">Person's Name (Optional)</label>
+                <input type="text" id="personName" class="form-control" placeholder="e.g., John Smith">
+            </div>
+            <div class="form-group">
+                <label for="positionOverview">Job Overview</label>
+                <textarea id="positionOverview" class="form-control" rows="3" placeholder="Brief overview of the position..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="positionResponsibilities">Responsibilities (one per line)</label>
+                <textarea id="positionResponsibilities" class="form-control" rows="4" placeholder="Responsibility 1&#10;Responsibility 2&#10;Responsibility 3"></textarea>
+                <div class="help-text">Enter each responsibility on a new line</div>
+            </div>
+            <div class="form-group">
+                <label for="positionQualifications">Qualifications (one per line)</label>
+                <textarea id="positionQualifications" class="form-control" rows="4" placeholder="Qualification 1&#10;Qualification 2&#10;Qualification 3"></textarea>
+                <div class="help-text">Enter each qualification on a new line</div>
+            </div>
+            <button class="btn btn-primary" onclick="addPosition()">Add Position</button>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            theme: 'neutral'
+        });
+        
+        // Data structure to hold organization
+        let organization = {
+            name: "My Organization",
+            mainDepartments: []
+        };
+        
+        // Render the chart
+        function renderChart() {
+            let mermaidCode = `graph TD\n    style MyOrganization fill:#9b59b6,stroke:#8e44ad,color:#fff,stroke-width:2px\n    MyOrganization["<b>🏢 My Organization</b>"]\n\n`;
+            
+            organization.mainDepartments.forEach((dept, deptIndex) => {
+                const deptId = `Dept${deptIndex}`;
+                mermaidCode += `    MyOrganization --> ${deptId}\n`;
+                mermaidCode += `    style ${deptId} fill:#9b59b6,stroke:#8e44ad,color:#fff,stroke-width:2px\n`;
+                mermaidCode += `    ${deptId}["<b>${dept.name}</b>${dept.description ? '<br/><small>' + dept.description + '</small>' : ''}"]\n`;
+                
+                // Add sub-departments
+                dept.subDepartments.forEach((subDept, subIndex) => {
+                    const subId = `${deptId}_Sub${subIndex}`;
+                    mermaidCode += `    ${deptId} --> ${subId}\n`;
+                    mermaidCode += `    style ${subId} fill:#1abc9c,stroke:#16a085,color:#fff,stroke-width:2px\n`;
+                    mermaidCode += `    ${subId}["<b>${subDept.name}</b>${subDept.description ? '<br/><small>' + subDept.description + '</small>' : ''}"]\n`;
+                    
+                    // Add positions in sub-department
+                    addPositionsToMermaid(mermaidCode, subDept.positions, subId);
+                });
+                
+                // Add positions directly in main department
+                addPositionsToMermaid(mermaidCode, dept.positions, deptId);
+            });
+            
+            document.getElementById('chartDiv').innerHTML = `<div class="mermaid">${mermaidCode}</div>`;
+            
+            // Re-initialize Mermaid to render the new chart
+            setTimeout(() => {
+                mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+                
+                // Add click handlers to nodes
+                setTimeout(() => {
+                    document.querySelectorAll('.nodeLabel').forEach(label => {
+                        label.style.cursor = 'pointer';
+                        label.addEventListener('click', function(e) {
+                            const nodeText = this.textContent || this.innerText;
+                            const position = findPositionByText(nodeText);
+                            if (position) {
+                                showJobDetails(position);
+                            }
+                        });
+                    });
+                }, 100);
+            }, 100);
+        }
+        
+        function addPositionsToMermaid(mermaidCode, positions, parentId) {
+            positions.forEach((pos, posIndex) => {
+                const posId = `${parentId}_Pos${posIndex}`;
+                mermaidCode += `    ${parentId} --> ${posId}\n`;
+                
+                // Determine fill color based on level
+                let fillColor = '#2c3e50';
+                if (pos.level === 2) fillColor = '#3498db';
+                else if (pos.level === 3) fillColor = '#2ecc71';
+                else if (pos.level === 4) fillColor = '#f39c12';
+                else if (pos.level >= 5) fillColor = '#e74c3c';
+                
+                mermaidCode += `    style ${posId} fill:${fillColor},stroke-width:2px,color:#fff\n`;
+                mermaidCode += `    ${posId}["<b>Level ${pos.level}</b><br/><b>${pos.title}</b>${pos.person ? '<br/>' + pos.person : ''}"]\n`;
+            });
+            return mermaidCode;
+        }
+        
+        // Find position by display text
+        function findPositionByText(text) {
+            for (const dept of organization.mainDepartments) {
+                for (const pos of dept.positions) {
+                    if (text.includes(pos.title) || (pos.person && text.includes(pos.person))) {
+                        return pos;
+                    }
+                }
+                for (const subDept of dept.subDepartments) {
+                    for (const pos of subDept.positions) {
+                        if (text.includes(pos.title) || (pos.person && text.includes(pos.person))) {
+                            return pos;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // Show job details panel
+        function showJobDetails(position) {
+            document.getElementById('detailJobTitle').textContent = position.title;
+            document.getElementById('detailJobLevel').textContent = `Level ${position.level}`;
+            document.getElementById('detailJobLevel').className = `job-level level-${position.level}`;
+            document.getElementById('detailDepartment').textContent = position.department;
+            document.getElementById('detailOverview').textContent = position.overview || "No overview provided.";
+            
+            const responsibilitiesList = document.getElementById('detailResponsibilities');
+            responsibilitiesList.innerHTML = '';
+            if (position.responsibilities && position.responsibilities.length > 0) {
+                position.responsibilities.forEach(resp => {
+                    const li = document.createElement('li');
+                    li.textContent = resp;
+                    responsibilitiesList.appendChild(li);
+                });
+            } else {
+                responsibilitiesList.innerHTML = '<li>No responsibilities defined.</li>';
+            }
+            
+            const qualificationsList = document.getElementById('detailQualifications');
+            qualificationsList.innerHTML = '';
+            if (position.qualifications && position.qualifications.length > 0) {
+                position.qualifications.forEach(qual => {
+                    const li = document.createElement('li');
+                    li.textContent = qual;
+                    qualificationsList.appendChild(li);
+                });
+            } else {
+                qualificationsList.innerHTML = '<li>No qualifications defined.</li>';
+            }
+            
+            document.getElementById('jobDetailsPanel').style.display = 'block';
+        }
+        
+        function closeJobDetails() {
+            document.getElementById('jobDetailsPanel').style.display = 'none';
+        }
+        
+        // Modal functions
+        function openModal(modalType) {
+            if (modalType === 'subDept' || modalType === 'position') {
+                updateDepartmentDropdowns();
+            }
+            document.getElementById(modalType + 'Modal').style.display = 'flex';
+        }
+        
+        function closeModal(modalType) {
+            document.getElementById(modalType + 'Modal').style.display = 'none';
+        }
+        
+        function updateDepartmentDropdowns() {
+            const parentDeptSelect = document.getElementById('parentDept');
+            const positionDeptSelect = document.getElementById('positionDept');
+            
+            parentDeptSelect.innerHTML = '<option value="">Select a main department...</option>';
+            positionDeptSelect.innerHTML = '<option value="">Select department...</option>';
+            
+            organization.mainDepartments.forEach((dept, index) => {
+                // Add main department to both dropdowns
+                const mainDeptOption = `<option value="main_${index}">${dept.name} (Main Department)</option>`;
+                parentDeptSelect.innerHTML += mainDeptOption;
+                positionDeptSelect.innerHTML += mainDeptOption;
+                
+                // Add sub-departments to position dropdown
+                dept.subDepartments.forEach((subDept, subIndex) => {
+                    positionDeptSelect.innerHTML += `<option value="sub_${index}_${subIndex}">${dept.name} → ${subDept.name} (Sub-Department)</option>`;
+                });
+            });
+        }
+        
+        // Add main department
+        function addMainDepartment() {
+            const name = document.getElementById('deptName').value.trim();
+            const description = document.getElementById('deptDescription').value.trim();
+            
+            if (!name) {
+                alert('Please enter a department name');
+                return;
+            }
+            
+            organization.mainDepartments.push({
+                name: name,
+                description: description,
+                subDepartments: [],
+                positions: []
+            });
+            
+            document.getElementById('deptName').value = '';
+            document.getElementById('deptDescription').value = '';
+            closeModal('mainDept');
+            renderChart();
+        }
+        
+        // Add sub-department
+        function addSubDepartment() {
+            const parentValue = document.getElementById('parentDept').value;
+            const name = document.getElementById('subDeptName').value.trim();
+            const description = document.getElementById('subDeptDescription').value.trim();
+            
+            if (!parentValue) {
+                alert('Please select a parent department');
+                return;
+            }
+            
+            if (!name) {
+                alert('Please enter a sub-department name');
+                return;
+            }
+            
+            const [type, index] = parentValue.split('_');
+            const parentIndex = parseInt(index);
+            
+            if (organization.mainDepartments[parentIndex]) {
+                organization.mainDepartments[parentIndex].subDepartments.push({
+                    name: name,
+                    description: description,
+                    positions: []
+                });
+            }
+            
+            document.getElementById('subDeptName').value = '';
+            document.getElementById('subDeptDescription').value = '';
+            closeModal('subDept');
+            renderChart();
+        }
+        
+        // Add position
+        function addPosition() {
+            const deptValue = document.getElementById('positionDept').value;
+            const level = document.getElementById('positionLevel').value;
+            const title = document.getElementById('positionTitle').value.trim();
+            const person = document.getElementById('personName').value.trim();
+            const overview = document.getElementById('positionOverview').value.trim();
+            const responsibilities = document.getElementById('positionResponsibilities').value
+                .split('\n')
+                .map(r => r.trim())
+                .filter(r => r.length > 0);
+            const qualifications = document.getElementById('positionQualifications').value
+                .split('\n')
+                .map(q => q.trim())
+                .filter(q => q.length > 0);
+            
+            if (!deptValue) {
+                alert('Please select a department');
+                return;
+            }
+            
+            if (!title) {
+                alert('Please enter a position title');
+                return;
+            }
+            
+            const [type, index1, index2] = deptValue.split('_');
+            const newPosition = {
+                title: title,
+                person: person || null,
+                level: parseInt(level),
+                overview: overview,
+                responsibilities: responsibilities,
+                qualifications: qualifications,
+                department: ''
+            };
+            
+            if (type === 'main') {
+                const deptIndex = parseInt(index1);
+                if (organization.mainDepartments[deptIndex]) {
+                    newPosition.department = organization.mainDepartments[deptIndex].name;
+                    organization.mainDepartments[deptIndex].positions.push(newPosition);
+                }
+            } else if (type === 'sub') {
+                const deptIndex = parseInt(index1);
+                const subIndex = parseInt(index2);
+                if (organization.mainDepartments[deptIndex] && 
+                    organization.mainDepartments[deptIndex].subDepartments[subIndex]) {
+                    newPosition.department = `${organization.mainDepartments[deptIndex].name} → ${organization.mainDepartments[deptIndex].subDepartments[subIndex].name}`;
+                    organization.mainDepartments[deptIndex].subDepartments[subIndex].positions.push(newPosition);
+                }
+            }
+            
+            // Clear form
+            ['positionTitle', 'personName', 'positionOverview', 'positionResponsibilities', 'positionQualifications'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+            
+            closeModal('position');
+            renderChart();
+        }
+        
+        // Reset chart
+        function resetChart() {
+            if (confirm('Are you sure you want to reset the entire chart? This cannot be undone.')) {
+                organization = {
+                    name: "My Organization",
+                    mainDepartments: []
+                };
+                renderChart();
+                closeJobDetails();
+            }
+        }
+        
+        // Initialize with some example data
+        organization.mainDepartments = [
+            {
+                name: "Maintenance",
+                description: "Maintenance and repair operations",
+                subDepartments: [
+                    {
+                        name: "Fertilizing",
+                        description: "Chemical application and soil treatment",
+                        positions: []
+                    },
+                    {
+                        name: "Mowing",
+                        description: "Lawn and turf maintenance",
+                        positions: []
+                    }
+                ],
+                positions: []
+            },
+            {
+                name: "Operations",
+                description: "Daily operational management",
+                subDepartments: [],
+                positions: []
+            }
+        ];
+        
+        // Initial render
+        renderChart();
+    </script>
+</body>
+</html>
